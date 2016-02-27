@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Google Maps JavaScript API Example: Custom StreetView</title>
+    <meta charset="UTF-8">
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false"
+    type="text/javascript"></script>
+    <script type="text/javascript">
+      var streetView, kokudoPanoID;
+
+      function initialize() {
+        //ストリートビューのオプションを設定
+        var streetViewOptions = {
+          panoProvider : getCustomPanorama,
+          pano : "visitor_center"
+        };
+
+        //StreetViewPanoramaクラスのインスタンスを作成
+        var streetViewDiv = document.getElementById('streetview_canvas');
+        streetViewDiv.style.fontSize = "15px";
+        streetView = new google.maps.StreetViewPanorama(streetViewDiv, streetViewOptions);
+
+
+        // 川田整形外科前を国道より撮影した位置
+        var kokudo = new google.maps.LatLng(33.496153,133.430900);
+        
+        // StreetViewServiceのインスタンスを作成
+        var streetviewService = new google.maps.StreetViewService();
+        
+        // 緯度経度に基づいてパノラマIDを調べる
+        var radius = 50;  // 検索範囲:50m
+        streetviewService.getPanoramaByLocation(kokudo, radius, function(result, status) {
+          if (status == google.maps.StreetViewStatus.OK) {
+            kokudoPanoID = result.location.pano;  //パノラマID
+            streetView.setPosition(result.location.latLng);
+          }
+        });
+
+        google.maps.event.addListener(streetView, "links_changed", createCustomLink);
+      }
+
+      /*
+       * panoIDに対応するstreetViewPanoramaDataを返す
+       */
+      function getCustomPanorama(panoID) {
+        var streetViewPanoramaData = {
+          links : [],
+          copyright : ' (c) Kawadaseikei.com',
+          tiles : {
+            tileSize : new google.maps.Size(256, 256),
+            worldSize : new google.maps.Size(2048, 1024),
+            centerHeading : 0,
+            getTileUrl : getCustomPanoramaTileUrl
+          }
+        };
+          
+        switch(panoID) {
+    
+          case "entrance_to_hospital":
+            streetViewPanoramaData["location"] = {
+              pano: 'entrance_to_hospital',
+              description: "病院",
+              latLng: new google.maps.LatLng(33.496466, 133.430949)
+            };
+            return streetViewPanoramaData;
+        }
+      }
+
+      /*
+       * ストリートビューのタイル画像URLを返す
+       */
+      function getCustomPanoramaTileUrl(panoID, zoom, tileX, tileY) {
+        var num=tileY*8+tileX+1;
+        console.log( "img/" + panoID + "/" + '1' + '_' + num + '.jpg');
+        return "img/" + panoID + "/" + '1' + '_' + num + '.jpg';
+      }
+
+
+
+
+
+
+
+
+      /*
+       * 各ポイントのつながりを返す
+       */
+      function createCustomLink() {
+        var links = streetView.getLinks();
+        var panoID = streetView.getPano();
+        
+        switch(panoID) {
+          case kokudoPanoID:
+            // 駐車場(Googleが撮影したストリートビューの位置)
+            links.push({
+              description : "病院",
+              pano : "entrance_to_hospital",
+              heading : 1
+            });
+            break;
+            
+          case "リハ玄関":
+            //国道へのリンク
+            links.push({
+              description : "国道",
+              pano : kokudoPanoID,
+              heading : 180
+            });
+            
+            //Arden駅へのリンク
+            links.push({
+              description : "本院玄関",
+              pano : "entrance_to_main",
+              heading : 90
+            });
+            break;
+            
+          case "entrance_to_hospital"://病院正面玄関の画像とそのリンク
+          
+            links.push({
+              description : "リハ玄関",
+              pano : "entrance_to_reha",
+              heading : 10
+            });
+
+            links.push({
+              description : "国道",
+              pano : kokudoPanoID,
+              heading : 248
+            });
+            
+
+            links.push({
+              description : "本院玄関",
+              pano : "entrance_to_main",
+              heading : 62
+            });
+            break;
+            
+            /*
+                      case "genkan":
+            //Visitor centerへのリンク
+            links.push({
+              description : "Visitor Center",
+              pano : "visitor_center",
+              heading : 242
+            });
+            break;
+            
+                      case "ikyoku":
+            //Visitor centerへのリンク
+            links.push({
+              description : "Visitor Center",
+              pano : "visitor_center",
+              heading : 242
+            });
+            break;
+            
+                      case "ikyoku":
+            //Visitor centerへのリンク
+            links.push({
+              description : "Visitor Center",
+              pano : "visitor_center",
+              heading : 242
+            });
+            break;
+            */
+        }
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+    <style type="text/css">
+      html, body, #streetview_canvas {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="streetview_canvas"></div>
+  </body>
+</html>
